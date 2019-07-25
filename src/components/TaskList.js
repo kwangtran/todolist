@@ -2,10 +2,37 @@ import React, { Component } from 'react'
 import TaskItem from './TaskItem';
 
 export default class TaskList extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            filterName: '',
+            filterStatus: -1
+        }
+    }
+    handleChange = (event) => {
+        var name = event.target.name;
+        var value = event.target.value;
+        // console.log(name, value)
+        this.setState({
+            [name]: value
+        })
+        this.props.handleChange(
+            name === 'filterName' ? value : this.state.filterName,
+            name === 'fitlerStatus' ? value : this.state.filterStatus,
+        )
+    }
     render() {
         var { tasks } = this.props;
+        var { filterName, filterStatus } = this.state;
         var elmTasks = tasks.map((task, index) => {
-            return <TaskItem key={index} task={task} index={index} />
+            return <TaskItem
+                key={index}
+                task={task}
+                index={index}
+                onChangeStatus={this.props.onChangeStatus}
+                onDelete={this.props.onDelete}
+                onUpdate={this.props.onUpdate}
+            />
         })
         return (
             <div className="row mt-15">
@@ -23,10 +50,18 @@ export default class TaskList extends Component {
                             <tr>
                                 <td />
                                 <td>
-                                    <input type="text" className="form-control" />
+                                    <input
+                                        onChange={(event) => this.handleChange(event)}
+                                        value={filterName}
+                                        name="filterName"
+                                        type="text"
+                                        className="form-control" />
                                 </td>
                                 <td>
-                                    <select className="form-control">
+                                    <select
+                                        onChange={(event) => this.handleChange(event)}
+                                        name="fitlerStatus"
+                                        className="form-control">
                                         <option value={-1}>Tất Cả</option>
                                         <option value={0}>Ẩn</option>
                                         <option value={1}>Kích Hoạt</option>

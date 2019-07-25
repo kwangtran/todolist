@@ -3,53 +3,176 @@ import './App.css';
 import TaskForm from './components/TaskForm';
 import Control from './components/Control';
 import TaskList from './components/TaskList';
+import tasks from './mocks/data'
+import { generateID } from './helpers/IDHelper'
 
 export default class App extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			tasks: []
+			tasks: [],
+			isDisplayForm: false,
+			taskEditing: null,
+			filter: {
+				name: '',
+				status: -1
+			},
+			keyword: ''
+
 		}
 	}
-	onGenerateData = () => {
-		console.log('ahihi');
-		var tasks = [
-			{
-				id: this.generateID(),
-				name: 'Học lập trình',
-				status: true
-			},
-			{
-				id: this.generateID(),
-				name: 'Đi chơi',
-				status: false
-			},
-			{
-				id: this.generateID(),
-				name: 'Ngủ',
-				status: true
-			},
-		]
+	componentDidMount() {
+		if (!localStorage.getItem('tasks')) {
+			localStorage.setItem('tasks', JSON.stringify(tasks))
+		}
+		// this.setState({
+		// 	tasks: JSON.parse(localStorage.getItem('tasks'))
+		// });
+		this.setState((state, props) => {
+			return {
+				tasks: JSON.parse(localStorage.getItem('tasks'))
+			}
+		});
 
-		localStorage.setItem('tasks', JSON.stringify(tasks));
 	}
 	componentWillMount() {
-		if (localStorage && localStorage.getItem('tasks')) {
-			var tasks = JSON.parse(localStorage.getItem('tasks'));
+	}
+	onToggleForm = () => {
+		//Dang sua roi an them
+		if (this.state.taskEditing !== null) {
+			this.setState({
+				isDisplayForm: true,
+				taskEditing: null
+			});
+		} else {
+			//An them ngay tu dau
+			this.setState({
+				isDisplayForm: !this.state.isDisplayForm,
+				taskEditing: null
+			});
+		}
+
+	}
+	onCloseForm = () => {
+		this.setState((state, props) => (
+			{ isDisplayForm: false }
+		));
+	}
+	onShowForm = () => {
+		this.setState((state, props) => (
+			{ isDisplayForm: true }
+		));
+	}
+	onSubmit = (data) => {
+		var { tasks } = this.state;
+		if (data.id === null) {
+			data.id = generateID();
+			tasks.push(data);
+		} else {
+			var index = this.findIndex(data.id);
+			tasks[index] = data;
+		}
+		this.setState({
+			tasks: tasks,
+			taskEditing: null
+		});
+		localStorage.setItem('tasks', JSON.stringify(tasks))
+
+	}
+	onDelete = (id) => {
+		var index = this.findIndex(id);
+		var { tasks } = this.state;
+		if (index !== -1) {
+			tasks.splice(index, 1);
 			this.setState({
 				tasks: tasks
 			});
+			localStorage.setItem('tasks', JSON.stringify(tasks))
+		}
+		this.onCloseForm();
+	}
+	onUpdate = (id) => {
+		var { tasks } = this.state;
+		var index = this.findIndex(id);
+		// this.setState({
+		// 	taskEditing: tasks[index]
+		// });
+		// console.log(this.state.taskEditing);
 
+		var taskEditing = tasks[index];
+		this.setState({
+			taskEditing: taskEditing
+		});
+		this.onShowForm();
+	}
+
+	onChangeStatus = (id) => {
+		var index = this.findIndex(id);
+		var { tasks } = this.state;
+		if (index !== -1) {
+			tasks[index].status = !tasks[index].status;
+			this.setState({
+				tasks: tasks
+			});
+			localStorage.setItem('tasks', JSON.stringify(tasks))
 		}
 	}
-	s4() {
-		return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+	onChangeKeyword = (keyword) => {
+		this.setState({
+			keyword: this.state.keyword
+		});
 	}
-	generateID() {
-		return this.s4() + this.s4() + '-' + this.s4() + '-' + this.s4() + '-' + this.s4() + '-' + this.s4() + this.s4() + this.s4()
+	findIndex(id) {
+		var { tasks } = this.state;
+		var result = -1;
+		tasks.forEach((task, index) => {
+			if (task.id === id) {
+				result = index;
+			}
+		});
+		return result;
+	}
+	handleChange = (filterName, filterStatus) => {
+		filterStatus = parseInt(filterStatus, 10);
+		this.setState({
+			filter: {
+				name: filterName.toLowerCase(),
+				status: filterStatus
+			}
+		});
+	}
+	onSearchKeyword = (keyword) => {
+		this.setState((state, props) => { return { keyword:keyword }})
 	}
 	render() {
-		var { tasks } = this.state;
+		var { tasks, isDisplayForm, taskEditing, filter, keyword } = this.state;
+		if (filter) {
+			if (filter.name) {
+				tasks = tasks.filter((task) => {
+					return task.name.toLowerCase().indexOf(filter.name) !== -1
+				})
+			}
+			tasks = tasks.filter((task) => {
+				if (filter.status === -1) {
+					return task;
+				}
+				else {
+					return task.status === (filter.status === 1 ? true : false)
+				}
+			})
+			console.log(tasks);
+		}
+		if (keyword) {
+			tasks = tasks.filter((task) => {
+				return task.name.toLowerCase().indexOf(keyword.toLowerCase()) !== -1
+			})
+		}
+		var elmTaskForm = isDisplayForm ?
+			<TaskForm
+				onCloseForm={this.onCloseForm}
+				onSubmit={this.onSubmit}
+				task={taskEditing}
+			/> : null;
 		return (
 			<div className="container">
 				<div className="text-center">
@@ -57,19 +180,29 @@ export default class App extends Component {
 					<hr />
 				</div>
 				<div className="row">
-					<div className="col-xs-4 col-sm-4 col-md-4 col-lg-4">
-						{/* Form */}
-						<TaskForm />
+					<div className={isDisplayForm ? "col-xs-4 col-sm-4 col-md-4 col-lg-4" : ""}>
+						{/* <TaskForm /> */}
+						{elmTaskForm}
 					</div>
-					<div className="col-xs-8 col-sm-8 col-md-8 col-lg-8">
-						<button type="button" className="btn btn-primary">
+					<div className={isDisplayForm ? "col-xs-8 col-sm-8 col-md-8 col-lg-8" : "col-xs-12 col-sm-12 col-md-12 col-lg-12"}>
+						<button
+							type="button"
+							className="btn btn-primary"
+							onClick={this.onToggleForm}
+						>
 							<span className="fa fa-plus mr-5" />Thêm Công Việc
 			  			</button>
 						<button onClick={this.onGenerateData} type="button" className="btn btn-danger">
 							<span className="fa fa-plus mr-5" />Generate data
 			  			</button>
-						<Control />
-						<TaskList tasks={tasks} />
+						<Control onChangeKeyword={this.onChangeKeyword} onSearchKeyword={this.onSearchKeyword} />
+						<TaskList
+							tasks={tasks}
+							onChangeStatus={this.onChangeStatus}
+							onDelete={this.onDelete}
+							onUpdate={this.onUpdate}
+							handleChange={this.handleChange}
+						/>
 					</div>
 				</div>
 			</div>
