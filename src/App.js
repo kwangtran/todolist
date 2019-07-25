@@ -17,8 +17,9 @@ export default class App extends Component {
 				name: '',
 				status: -1
 			},
-			keyword: ''
-
+			keyword: '',
+			sortBy: 'name',
+			sortValue: 1
 		}
 	}
 	componentDidMount() {
@@ -142,10 +143,17 @@ export default class App extends Component {
 		});
 	}
 	onSearchKeyword = (keyword) => {
-		this.setState((state, props) => { return { keyword:keyword }})
+		this.setState((state, props) => { return { keyword: keyword } })
+	}
+	onSort = (sortBy, sortValue) => {
+		this.setState({
+			sortBy: sortBy,
+			sortValue: sortValue
+		})
+		// console.log(this.state.sortBy, this.state.sortValue);
 	}
 	render() {
-		var { tasks, isDisplayForm, taskEditing, filter, keyword } = this.state;
+		var { tasks, isDisplayForm, taskEditing, filter, keyword, sortBy, sortValue } = this.state;
 		if (filter) {
 			if (filter.name) {
 				tasks = tasks.filter((task) => {
@@ -160,11 +168,26 @@ export default class App extends Component {
 					return task.status === (filter.status === 1 ? true : false)
 				}
 			})
-			console.log(tasks);
 		}
+		console.log(sortBy, sortValue)
 		if (keyword) {
 			tasks = tasks.filter((task) => {
 				return task.name.toLowerCase().indexOf(keyword.toLowerCase()) !== -1
+			})
+		}
+
+		if (sortBy === 'name') {
+			tasks.sort((a, b) => {
+				if (a.name > b.name) return sortValue;
+				else if (a.name < b.name) return -sortValue;
+				else return 0;
+			})
+		}
+		else {
+			tasks.sort((a, b) => {
+				if (a.status > b.status) return -sortValue;
+				else if (a.status < b.status) return sortValue;
+				else return 0;
 			})
 		}
 		var elmTaskForm = isDisplayForm ?
@@ -195,7 +218,13 @@ export default class App extends Component {
 						<button onClick={this.onGenerateData} type="button" className="btn btn-danger">
 							<span className="fa fa-plus mr-5" />Generate data
 			  			</button>
-						<Control onChangeKeyword={this.onChangeKeyword} onSearchKeyword={this.onSearchKeyword} />
+						<Control
+							sortBy={sortBy}
+							sortValue={sortValue}
+							onChangeKeyword={this.onChangeKeyword}
+							onSearchKeyword={this.onSearchKeyword}
+							onSort={this.onSort}
+						/>
 						<TaskList
 							tasks={tasks}
 							onChangeStatus={this.onChangeStatus}
